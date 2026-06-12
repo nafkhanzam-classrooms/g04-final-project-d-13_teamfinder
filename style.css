@@ -972,3 +972,17 @@ body, html {
     border: 2px dashed var(--accent-primary) !important;
     border-radius: var(--border-radius-lg);
 }
+
+/* New message indicator */
+.new-msg-indicator {
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.list-item {
+    position: relative;
+}
