@@ -10,7 +10,7 @@
 
 <body>
 
-    <!-- AUTH CONTAINER -->
+    <!-- ================= AUTH CONTAINER ================= -->
     <div id="auth-section" class="auth-container glass-panel">
         <div class="auth-header">
             <h1 id="auth-title">TeamFinder Chat</h1>
@@ -43,7 +43,7 @@
         </div>
     </div>
 
-    <!-- MAIN APP WORKSPACE -->
+    <!-- ================= MAIN APP WORKSPACE ================= -->
     <div id="app-section" class="app-container">
 
         <!-- SIDEBAR (LEFT) -->
@@ -141,7 +141,7 @@
 
     </div>
 
-    <!-- CREATE ROOM MODAL -->
+    <!-- ================= CREATE ROOM MODAL ================= -->
     <div id="create-room-modal" class="modal-overlay">
         <div class="modal-box glass-panel">
             <h3 class="modal-title">Create New Room</h3>
@@ -157,7 +157,7 @@
         </div>
     </div>
 
-    <!-- MATCHING COMPLETED OVERLAY -->
+    <!-- ================= MATCHING COMPLETED OVERLAY ================= -->
     <div id="match-found-overlay" class="matched-alert-overlay">
         <div class="matched-glow-ring">
             <div class="matched-inner-circle">
@@ -172,7 +172,7 @@
         <p style="font-size: 0.8rem; color: var(--text-dark); margin-top: 8px;">Connecting to arena room...</p>
     </div>
 
-    <!-- EMOJI SELECTOR OVERLAY -->
+    <!-- ================= EMOJI SELECTOR OVERLAY ================= -->
     <div id="emoji-picker-overlay" class="emoji-picker-popup">
         <div class="emoji-option" data-emoji="👍">👍</div>
         <div class="emoji-option" data-emoji="❤️">❤️</div>
@@ -183,6 +183,23 @@
     </div>
 
     <script src="client.js"></script>
+
+    <div id="upload-preview-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box glass-panel" style="max-width: 500px;">
+            <h3 class="modal-title">📎 Confirm Upload</h3>
+            <div id="upload-preview-content" style="margin: 16px 0;">
+                <p><strong>File:</strong> <span id="preview-filename"></span></p>
+                <p><strong>Size:</strong> <span id="preview-filesize"></span></p>
+                <p><strong>Destination:</strong> <span id="preview-destination"></span></p>
+                <div id="preview-image" style="max-width: 100%; margin-top: 10px;"></div>
+            </div>
+            <div class="modal-actions">
+                <button id="cancel-upload-btn" class="btn btn-secondary">Cancel</button>
+                <button id="confirm-upload-btn" class="btn">Send File</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 
 </html>
