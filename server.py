@@ -354,7 +354,7 @@ def on_matchmaking_complete(user_a, user_b, room_name):
         "status": "matched",
         "room_name": room_name,
         "opponent": user_b["username"],
-        "opponent_mmr": user_b["mmr"]
+        "opponent_skill": user_b.get("skill", "Unknown")
     })
     
     # Send match status to user B
@@ -363,9 +363,8 @@ def on_matchmaking_complete(user_a, user_b, room_name):
         "status": "matched",
         "room_name": room_name,
         "opponent": user_a["username"],
-        "opponent_mmr": user_a["mmr"]
+        "opponent_skill": user_a.get("skill", "Unknown")
     })
-
 
 # --- Client Session Logic Thread ---
 def handle_client_connection(client_socket):
@@ -636,18 +635,17 @@ def handle_client_connection(client_socket):
                             send_to_user(msg_info.get("sender"), reaction_update)
                         
                 elif msg_type == "start_matchmaking":
-                    # Fetch rating
-                    mmr = db.get_user_mmr(username)
+                    # Ambil skill dari client (dikirim dari client.js)
+                    skill = data.get("skill", "")
                     
-                    success, size = matchmaker.join_queue(username, mmr, client_socket)
+                    success, size = matchmaker.join_queue(username, skill, client_socket)
                     if success:
-                        Logger.info("MATCH", f"{username} entered matchmaking queue (MMR: {mmr})")
+                        Logger.info("MATCH", f"{username} entered matchmaking queue (Skill: {skill})")
                         send_ws_frame(client_socket, 1, json.dumps({
                             "type": "matchmaking_status",
                             "status": "queued",
                             "queue_size": size
                         }))
-                        # Broadcast size to all matchmaking users
                         broadcast_matchmaking_size()
                     else:
                         send_ws_frame(client_socket, 1, json.dumps({
@@ -663,6 +661,17 @@ def handle_client_connection(client_socket):
                         }))
                         broadcast_matchmaking_size()
                         
+                elif msg_type == "update_mmr":
+                    new_mmr = data.get("mmr")
+                    if new_mmr and 100 <= new_mmr <= 3000:
+                        db.update_user_mmr(username, new_mmr)
+                        # Broadcast ke semua client (update online users list)
+                        broadcast_online_users()
+                        send_ws_frame(client_socket, 1, json.dumps({
+                            "type": "mmr_updated",
+                            "new_mmr": new_mmr
+                        }))
+         
                 elif msg_type == "upload_file_chunk":
                     filename = data.get("filename")
                     chunk_idx = data.get("chunk_index")
