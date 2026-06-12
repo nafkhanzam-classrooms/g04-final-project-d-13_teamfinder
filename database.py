@@ -291,7 +291,7 @@ def get_message_recipient_info(message_id):
                 "sender": row["sender"]
             }
         return None
-
+    
 # Run DB initialization when run directly
 if __name__ == "__main__":
     db_init()
