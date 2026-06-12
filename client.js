@@ -141,6 +141,21 @@ function saveLeftRooms() {
     }
 }
 
+// ========== FUNGSI UNTUK MENGHAPUS INDICATOR NOTIFIKASI ==========
+function removeNotificationIndicator(username) {
+    console.log('[NOTIF] Removing indicator for:', username);
+    const allItems = document.querySelectorAll('#online-users-container .list-item');
+    allItems.forEach(item => {
+        if (item.textContent.includes(username)) {
+            const indicator = item.querySelector('.new-msg-indicator');
+            if (indicator) {
+                console.log('[NOTIF] Indicator removed for:', username);
+                indicator.remove();
+            }
+        }
+    });
+}
+
 // ========== AUTH MODE ==========
 let isRegisterMode = false;
 
@@ -393,7 +408,6 @@ function handleServerMessage(msg) {
         case 'room_list':
             allRooms = msg.rooms;
             renderRooms();
-            // Auto update active chat title jika perlu
             if (activeChat && activeChat.type === 'room') {
                 const roomStillExists = allRooms.some(r => r.name === activeChat.target);
                 if (!roomStillExists && !leftRooms.has(activeChat.target)) {
@@ -409,7 +423,6 @@ function handleServerMessage(msg) {
             
         case 'online_users':
             renderOnlineUsers(msg.users);
-            // Update private chat status jika user offline
             if (activeChat && activeChat.type === 'pm' && activeChatStatus) {
                 const userStillOnline = msg.users.some(u => u.username === activeChat.target);
                 if (!userStillOnline) {
@@ -448,13 +461,16 @@ function handleServerMessage(msg) {
                 toast.className = 'message-system';
                 toast.style.cssText = 'background: linear-gradient(135deg, rgba(0,229,255,0.3), rgba(179,136,255,0.3)); border: 2px solid #00e5ff; border-radius: 24px; padding: 12px 20px; margin: 8px 0; cursor: pointer;';
                 toast.innerHTML = `💌 <strong>${escapeHtml(msg.sender)}</strong> sent you a message!<br><span style="font-size:0.7rem;">Click to reply →</span>`;
-                toast.onclick = () => startPrivateChat(msg.sender);
+                toast.onclick = () => {
+                    removeNotificationIndicator(msg.sender);
+                    startPrivateChat(msg.sender);
+                };
                 if (chatMessagesContainer) {
                     chatMessagesContainer.appendChild(toast);
                     setTimeout(() => toast.remove(), 8000);
                 }
                 
-                // 3. Badge di sidebar
+                // 3. Badge di sidebar (tambah indicator)
                 const allItems = document.querySelectorAll('#online-users-container .list-item');
                 allItems.forEach(item => {
                     if (item.textContent.includes(msg.sender)) {
@@ -464,6 +480,7 @@ function handleServerMessage(msg) {
                             indicator.className = 'new-msg-indicator';
                             indicator.innerHTML = ' 💬';
                             indicator.style.color = '#00e5ff';
+                            indicator.style.animation = 'blink 1s infinite';
                             item.appendChild(indicator);
                         }
                     }
@@ -530,7 +547,10 @@ function renderOnlineUsers(users) {
         item.className = 'list-item';
         if (activeChat?.type === 'pm' && activeChat.target === user.username) item.classList.add('active');
         item.innerHTML = `<span class="online-dot"></span><span>${escapeHtml(user.username)} (${user.mmr})</span>`;
-        item.onclick = () => startPrivateChat(user.username);
+        item.onclick = () => {
+            removeNotificationIndicator(user.username);
+            startPrivateChat(user.username);
+        };
         onlineUsersContainer.appendChild(item);
     });
 }
@@ -554,6 +574,9 @@ function joinRoom(roomName) {
 }
 
 function startPrivateChat(username) {
+    // HAPUS INDICATOR NOTIFIKASI SAAT MEMBUKA CHAT
+    removeNotificationIndicator(username);
+    
     activeChat = { type: 'pm', target: username };
     if (activeChatTitle) activeChatTitle.innerText = `@ ${username}`;
     if (activeChatStatus) activeChatStatus.innerText = 'Private Message';
