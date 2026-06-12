@@ -2,15 +2,13 @@ import time
 import threading
 
 # Matchmaking queue configuration
-BASE_TOLERANCE = 50      # Initial MMR difference tolerance
-EXPANSION_RATE = 10      # Tolerance expansion per second in queue
 CHECK_INTERVAL = 2.0     # Check queue every 2 seconds
 
 # Thread-safe queue storage
 queue_lock = threading.Lock()
-matchmaking_queue = []  # List of dicts: {"username", "mmr", "joined_at", "client_conn"}
+matchmaking_queue = []  # List of dicts: {"username", "skill", "joined_at", "client_conn"}
 
-def join_queue(username, mmr, client_conn):
+def join_queue(username, skill, client_conn):
     """Add a user to the matchmaking queue if not already inside."""
     with queue_lock:
         # Check if already in queue
@@ -20,7 +18,7 @@ def join_queue(username, mmr, client_conn):
         
         matchmaking_queue.append({
             "username": username,
-            "mmr": mmr,
+            "skill": skill,  # simpan skill (string), bukan mmr
             "joined_at": time.time(),
             "client_conn": client_conn
         })
@@ -50,10 +48,9 @@ def get_queue_size():
 def run_matchmaker(on_match_found_callback, stop_event):
     """
     Background matchmaking thread runner.
-    Takes a callback `on_match_found_callback(user_a, user_b, room_name)`
-    and a `stop_event` to gracefully exit the thread.
+    Mencari user dengan KEAHLIAN YANG SAMA.
     """
-    print("[Matchmaker] Skill-based matchmaking thread started.")
+    print("[Matchmaker] Skill-based matchmaking thread started (matching SAME SKILL).")
     while not stop_event.is_set():
         time.sleep(CHECK_INTERVAL)
         
@@ -61,44 +58,36 @@ def run_matchmaker(on_match_found_callback, stop_event):
             if len(matchmaking_queue) < 2:
                 continue
                 
-            now = time.time()
             matched_pairs = []
             
-            # Identify matches
-            # We will search pairs and match if they fall within their combined dynamic tolerance
-            i = 0
-            while i < len(matchmaking_queue):
-                user_a = matchmaking_queue[i]
-                elapsed_a = now - user_a["joined_at"]
-                tolerance_a = BASE_TOLERANCE + (EXPANSION_RATE * elapsed_a)
-                
-                match_found = False
-                for j in range(i + 1, len(matchmaking_queue)):
-                    user_b = matchmaking_queue[j]
-                    elapsed_b = now - user_b["joined_at"]
-                    tolerance_b = BASE_TOLERANCE + (EXPANSION_RATE * elapsed_b)
-                    
-                    mmr_diff = abs(user_a["mmr"] - user_b["mmr"])
-                    max_allowed_diff = max(tolerance_a, tolerance_b)
-                    
-                    # Match condition: MMR difference is within the larger of their two tolerances
-                    if mmr_diff <= max_allowed_diff:
-                        matched_pairs.append((user_a, user_b))
-                        # Remove from queue (j first to preserve index of i)
-                        matchmaking_queue.pop(j)
-                        matchmaking_queue.pop(i)
-                        match_found = True
-                        break
-                
-                if not match_found:
-                    i += 1
+            # Kelompokkan user berdasarkan skill (string)
+            skill_groups = {}
+            for user in matchmaking_queue:
+                skill = user.get("skill", "")
+                if skill not in skill_groups:
+                    skill_groups[skill] = []
+                skill_groups[skill].append(user)
             
-            # Fire callbacks outside of the locked queue to avoid blocking
+            # Untuk setiap skill group, cari pasangan
+            for skill, users in skill_groups.items():
+                while len(users) >= 2:
+                    user_a = users.pop(0)
+                    user_b = users.pop(0)
+                    matched_pairs.append((user_a, user_b))
+            
+            # Hapus user yang sudah di-match dari queue utama
+            for user_a, user_b in matched_pairs:
+                if user_a in matchmaking_queue:
+                    matchmaking_queue.remove(user_a)
+                if user_b in matchmaking_queue:
+                    matchmaking_queue.remove(user_b)
+            
+            # Fire callbacks di luar lock
             for user_a, user_b in matched_pairs:
                 room_name = f"Match_{user_a['username']}_vs_{user_b['username']}"
-                print(f"[Matchmaker] Match found! {user_a['username']} ({user_a['mmr']}) vs {user_b['username']} ({user_b['mmr']}) -> Room: {room_name}")
+                skill_name = user_a.get("skill", "Unknown")
+                print(f"[Matchmaker] Match found! {user_a['username']} ({skill_name}) vs {user_b['username']} ({skill_name}) -> Room: {room_name}")
                 
-                # Run server callback to setup room, broadcast join notifications, etc.
                 threading.Thread(
                     target=on_match_found_callback, 
                     args=(user_a, user_b, room_name), 
