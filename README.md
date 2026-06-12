@@ -186,22 +186,22 @@ python benchmark.py --clients 10 --messages 5
 ## **Screenshot**
 
 ### Login Page
-
+<img width="1315" height="651" alt="image" src="https://github.com/user-attachments/assets/84789310-64b1-4084-af2e-7417e3458025" />
 
 ### Register Page
-
+<img width="1317" height="652" alt="image" src="https://github.com/user-attachments/assets/53aebf04-fb94-4c22-9323-d129408498c7" />
 
 ### Main Chat
+<img width="1315" height="653" alt="image" src="https://github.com/user-attachments/assets/d02bc5f9-4ce8-4761-b7b5-a830811e021d" />
 
-
-### Private Message & Notifikasi
-
+### Private Message
+<img width="1316" height="654" alt="image" src="https://github.com/user-attachments/assets/52f03c03-1ee8-4f16-89ab-161db54d2980" />
 
 ### File Upload Modal
-
+<img width="1318" height="651" alt="image" src="https://github.com/user-attachments/assets/2c042515-6a46-4d08-a448-a3395309bf54" />
 
 ### Matchmaking
-
+<img width="1316" height="654" alt="image" src="https://github.com/user-attachments/assets/780d7028-fe4b-4258-96af-c54d063699ac" />
 
 ---
 
