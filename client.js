@@ -85,6 +85,31 @@ if (!uploadProgressContainer) {
 const uploadProgressFill = document.getElementById('upload-progress-fill');
 const uploadProgressText = document.getElementById('upload-progress-text');
 
+// Buat modal upload preview custom
+let uploadModal = document.getElementById('upload-preview-modal');
+if (!uploadModal) {
+    uploadModal = document.createElement('div');
+    uploadModal.id = 'upload-preview-modal';
+    uploadModal.className = 'modal-overlay';
+    uploadModal.style.display = 'none';
+    uploadModal.innerHTML = `
+        <div class="modal-box glass-panel" style="max-width: 500px;">
+            <h3 class="modal-title">📎 Confirm Upload</h3>
+            <div id="upload-preview-content" style="margin: 16px 0;">
+                <p><strong>File:</strong> <span id="preview-filename"></span></p>
+                <p><strong>Size:</strong> <span id="preview-filesize"></span></p>
+                <p><strong>Destination:</strong> <span id="preview-destination"></span></p>
+                <div id="preview-image" style="max-width: 100%; margin-top: 10px;"></div>
+            </div>
+            <div class="modal-actions">
+                <button id="cancel-upload-btn" class="btn btn-secondary">Cancel</button>
+                <button id="confirm-upload-btn" class="btn">Send File</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(uploadModal);
+}
+
 // Tombol attach file
 let attachFileBtn = document.getElementById('attach-file-btn');
 if (!attachFileBtn) {
@@ -268,10 +293,6 @@ async function uploadFile(file) {
         return;
     }
     
-    // Konfirmasi upload
-    const confirmUpload = confirm(`Upload "${file.name}" (${(file.size/1024).toFixed(1)} KB) to ${activeChat.type === 'room' ? '#'+activeChat.target : '@'+activeChat.target}?`);
-    if (!confirmUpload) return;
-    
     uploadCancelled = false;
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
     console.log(`[UPLOAD] Starting: ${file.name}, ${totalChunks} chunks`);
@@ -334,7 +355,7 @@ async function uploadFile(file) {
     if (uploadProgressContainer) uploadProgressContainer.style.display = 'none';
 }
 
-// ========== ATTACH FILE EVENT ==========
+// ========== ATTACH FILE EVENT DENGAN MODAL CUSTOM ==========
 if (attachFileBtn) {
     attachFileBtn.addEventListener('click', () => {
         fileInput.click();
@@ -342,11 +363,65 @@ if (attachFileBtn) {
     
     fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
-        if (file) {
-            await uploadFile(file);
+        if (!file) return;
+        
+        pendingUploadFile = file;
+        
+        // Update modal preview
+        const previewFilename = document.getElementById('preview-filename');
+        const previewFilesize = document.getElementById('preview-filesize');
+        const previewDestination = document.getElementById('preview-destination');
+        const previewImage = document.getElementById('preview-image');
+        
+        if (previewFilename) previewFilename.innerText = file.name;
+        if (previewFilesize) previewFilesize.innerText = `${(file.size/1024).toFixed(1)} KB`;
+        if (previewDestination) {
+            previewDestination.innerText = activeChat ? 
+                (activeChat.type === 'room' ? `#${activeChat.target}` : `@${activeChat.target}`) : 'Select a chat first';
         }
+        
+        if (previewImage) {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImage.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 150px; border-radius: 8px;">`;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewImage.innerHTML = `<div style="text-align: center; padding: 20px;">📄 ${file.type || 'Document'}</div>`;
+            }
+        }
+        
+        // Tampilkan modal
+        const modal = document.getElementById('upload-preview-modal');
+        if (modal) modal.style.display = 'flex';
+        
         fileInput.value = '';
     });
+    
+    // Event listener untuk tombol Cancel di modal
+    const cancelUploadBtn = document.getElementById('cancel-upload-btn');
+    if (cancelUploadBtn) {
+        cancelUploadBtn.onclick = () => {
+            pendingUploadFile = null;
+            const modal = document.getElementById('upload-preview-modal');
+            if (modal) modal.style.display = 'none';
+            showAlert('Upload cancelled', 'warning');
+        };
+    }
+    
+    // Event listener untuk tombol Send File di modal
+    const confirmUploadBtn = document.getElementById('confirm-upload-btn');
+    if (confirmUploadBtn) {
+        confirmUploadBtn.onclick = async () => {
+            if (pendingUploadFile) {
+                await uploadFile(pendingUploadFile);
+                pendingUploadFile = null;
+            }
+            const modal = document.getElementById('upload-preview-modal');
+            if (modal) modal.style.display = 'none';
+        };
+    }
     
     // Drag & Drop
     const chatPane = document.querySelector('.chat-pane');
@@ -358,10 +433,35 @@ if (attachFileBtn) {
             chatPane.classList.remove('drag-over'); 
             const file = e.dataTransfer.files[0];
             if (file) {
-                const confirmUpload = confirm(`Upload "${file.name}" (${(file.size/1024).toFixed(1)} KB) to ${activeChat ? (activeChat.type === 'room' ? '#'+activeChat.target : '@'+activeChat.target) : 'chat'}?`);
-                if (confirmUpload) {
-                    await uploadFile(file);
+                pendingUploadFile = file;
+                
+                // Update modal preview
+                const previewFilename = document.getElementById('preview-filename');
+                const previewFilesize = document.getElementById('preview-filesize');
+                const previewDestination = document.getElementById('preview-destination');
+                const previewImage = document.getElementById('preview-image');
+                
+                if (previewFilename) previewFilename.innerText = file.name;
+                if (previewFilesize) previewFilesize.innerText = `${(file.size/1024).toFixed(1)} KB`;
+                if (previewDestination) {
+                    previewDestination.innerText = activeChat ? 
+                        (activeChat.type === 'room' ? `#${activeChat.target}` : `@${activeChat.target}`) : 'Select a chat first';
                 }
+                
+                if (previewImage) {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            previewImage.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 150px; border-radius: 8px;">`;
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        previewImage.innerHTML = `<div style="text-align: center; padding: 20px;">📄 ${file.type || 'Document'}</div>`;
+                    }
+                }
+                
+                const modal = document.getElementById('upload-preview-modal');
+                if (modal) modal.style.display = 'flex';
             }
         });
     }
@@ -451,12 +551,10 @@ function handleServerMessage(msg) {
             if (!isRelevantPM && msg.recipient === currentUser && msg.sender !== currentUser) {
                 console.log('[NOTIF] New PM from:', msg.sender);
                 
-                // 1. Title blink
                 let originalTitle = document.title;
                 document.title = `💬 NEW from ${msg.sender}! 💬`;
                 setTimeout(() => { document.title = originalTitle; }, 5000);
                 
-                // 2. Toast notification
                 const toast = document.createElement('div');
                 toast.className = 'message-system';
                 toast.style.cssText = 'background: linear-gradient(135deg, rgba(0,229,255,0.3), rgba(179,136,255,0.3)); border: 2px solid #00e5ff; border-radius: 24px; padding: 12px 20px; margin: 8px 0; cursor: pointer;';
@@ -470,7 +568,6 @@ function handleServerMessage(msg) {
                     setTimeout(() => toast.remove(), 8000);
                 }
                 
-                // 3. Badge di sidebar (tambah indicator)
                 const allItems = document.querySelectorAll('#online-users-container .list-item');
                 allItems.forEach(item => {
                     if (item.textContent.includes(msg.sender)) {
@@ -574,7 +671,6 @@ function joinRoom(roomName) {
 }
 
 function startPrivateChat(username) {
-    // HAPUS INDICATOR NOTIFIKASI SAAT MEMBUKA CHAT
     removeNotificationIndicator(username);
     
     activeChat = { type: 'pm', target: username };
@@ -845,4 +941,4 @@ function addResetLeftRoomsButton() {
     }
 }
 
-console.log('[TeamFinder] Client ready - FINAL COMPLETE VERSION');
+console.log('[TeamFinder] Client ready');
