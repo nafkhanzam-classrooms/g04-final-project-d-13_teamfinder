@@ -12,6 +12,7 @@ const ProtocolParser = {
 let socket = null;
 let currentUser = null;
 let currentUserMmr = 1000;
+let currentUserSkillText = 'Data Analysis';
 let activeChat = null;
 let leftRooms = new Set();
 let allRooms = [];
@@ -23,6 +24,15 @@ let pendingUploadFile = null;
 let currentUploadFile = null;
 let uploadCancelled = false;
 const CHUNK_SIZE = 32 * 1024;
+
+// Map MMR ke Teks Keahlian
+const skillMap = {
+    500: 'Data Management',
+    1000: 'Data Analysis',
+    1500: 'Pemrograman Jaringan',
+    2000: 'Pemrograman Web',
+    2500: 'Pengembangan Software'
+};
 
 // ========== DOM ELEMENTS ==========
 const authSection = document.getElementById('auth-section');
@@ -179,6 +189,100 @@ function removeNotificationIndicator(username) {
             }
         }
     });
+}
+
+// ========== FITUR EDIT KEAHLIAN ==========
+function showSkillModal() {
+    let skillModal = document.getElementById('skill-modal');
+    if (!skillModal) {
+        skillModal = document.createElement('div');
+        skillModal.id = 'skill-modal';
+        skillModal.className = 'modal-overlay';
+        skillModal.style.display = 'none';
+        skillModal.innerHTML = `
+            <div class="modal-box glass-panel" style="max-width: 400px;">
+                <h3 class="modal-title">Pilih Keahlian</h3>
+                <div id="skill-content" style="margin: 16px 0;">
+                    <p style="margin-bottom: 8px;">Pilih keahlian Anda:</p>
+                    <select id="skill-select" class="input-field" style="width: 100%;">
+                        <option value="500">Data Management</option>
+                        <option value="1000" selected>Data Analysis</option>
+                        <option value="1500">Pemrograman Jaringan</option>
+                        <option value="2000">Pemrograman Web</option>
+                        <option value="2500">Pengembangan Software</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button id="close-skill-modal" class="btn btn-secondary">Cancel</button>
+                    <button id="save-skill-btn" class="btn">Simpan Keahlian</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(skillModal);
+        
+        document.getElementById('close-skill-modal').onclick = () => {
+            skillModal.style.display = 'none';
+        };
+        
+        document.getElementById('save-skill-btn').onclick = () => {
+            const select = document.getElementById('skill-select');
+            let newMmr = parseInt(select.value);
+            
+            if (!isNaN(newMmr) && newMmr >= 100 && newMmr <= 3000) {
+                updateUserMmr(newMmr);
+                skillModal.style.display = 'none';
+            } else {
+                showAlert('Pilih keahlian yang valid', 'error');
+            }
+        };
+    }
+    
+    const select = document.getElementById('skill-select');
+    if (select) {
+        for (let i = 0; i < select.options.length; i++) {
+            if (parseInt(select.options[i].value) === currentUserMmr) {
+                select.selectedIndex = i;
+                break;
+            }
+        }
+    }
+    
+    skillModal.style.display = 'flex';
+}
+
+function updateUserMmr(newMmr) {
+    console.log('[SKILL] Updating MMR:', currentUserMmr, '->', newMmr);
+    
+    sendToServer('update_mmr', { mmr: newMmr });
+    
+    currentUserMmr = newMmr;
+    currentUserSkillText = skillMap[newMmr] || 'Data Analysis';
+    
+    // Tampilkan teks keahlian, bukan angka
+    if (userDisplayMmr) userDisplayMmr.innerText = `Keahlian: ${currentUserSkillText}`;
+    if (matchmakerUserMmr) matchmakerUserMmr.innerText = currentUserSkillText;
+    
+    appendSystemMessage(`Keahlian diperbarui: ${currentUserSkillText}`);
+}
+
+function addEditSkillButton() {
+    if (document.querySelector('.edit-skill-btn')) return;
+    
+    // Tampilkan teks keahlian di sidebar
+    currentUserSkillText = skillMap[currentUserMmr] || 'Data Analysis';
+    if (userDisplayMmr) userDisplayMmr.innerText = `Keahlian: ${currentUserSkillText}`;
+    if (matchmakerUserMmr) matchmakerUserMmr.innerText = currentUserSkillText;
+    
+    const editBtn = document.createElement('button');
+    editBtn.innerHTML = 'Pilih Keahlian';
+    editBtn.className = 'edit-skill-btn';
+    editBtn.style.cssText = 'margin-top: 6px; background: none; border: 1px solid var(--accent-cyan); border-radius: 20px; padding: 4px 10px; font-size: 0.7rem; cursor: pointer; color: var(--accent-cyan); width: 100%;';
+    editBtn.onclick = showSkillModal;
+    
+    const profileInfo = document.querySelector('.profile-info');
+    if (profileInfo) {
+        profileInfo.appendChild(editBtn);
+    }
 }
 
 // ========== AUTH MODE ==========
@@ -367,7 +471,6 @@ if (attachFileBtn) {
         
         pendingUploadFile = file;
         
-        // Update modal preview
         const previewFilename = document.getElementById('preview-filename');
         const previewFilesize = document.getElementById('preview-filesize');
         const previewDestination = document.getElementById('preview-destination');
@@ -388,18 +491,16 @@ if (attachFileBtn) {
                 };
                 reader.readAsDataURL(file);
             } else {
-                previewImage.innerHTML = `<div style="text-align: center; padding: 20px;">📄 ${file.type || 'Document'}</div>`;
+                previewImage.innerHTML = `<div style="text-align: center; padding: 20px;">${file.type || 'Document'}</div>`;
             }
         }
         
-        // Tampilkan modal
         const modal = document.getElementById('upload-preview-modal');
         if (modal) modal.style.display = 'flex';
         
         fileInput.value = '';
     });
     
-    // Event listener untuk tombol Cancel di modal
     const cancelUploadBtn = document.getElementById('cancel-upload-btn');
     if (cancelUploadBtn) {
         cancelUploadBtn.onclick = () => {
@@ -410,7 +511,6 @@ if (attachFileBtn) {
         };
     }
     
-    // Event listener untuk tombol Send File di modal
     const confirmUploadBtn = document.getElementById('confirm-upload-btn');
     if (confirmUploadBtn) {
         confirmUploadBtn.onclick = async () => {
@@ -423,7 +523,6 @@ if (attachFileBtn) {
         };
     }
     
-    // Drag & Drop
     const chatPane = document.querySelector('.chat-pane');
     if (chatPane) {
         chatPane.addEventListener('dragover', (e) => { e.preventDefault(); chatPane.classList.add('drag-over'); });
@@ -434,32 +533,6 @@ if (attachFileBtn) {
             const file = e.dataTransfer.files[0];
             if (file) {
                 pendingUploadFile = file;
-                
-                // Update modal preview
-                const previewFilename = document.getElementById('preview-filename');
-                const previewFilesize = document.getElementById('preview-filesize');
-                const previewDestination = document.getElementById('preview-destination');
-                const previewImage = document.getElementById('preview-image');
-                
-                if (previewFilename) previewFilename.innerText = file.name;
-                if (previewFilesize) previewFilesize.innerText = `${(file.size/1024).toFixed(1)} KB`;
-                if (previewDestination) {
-                    previewDestination.innerText = activeChat ? 
-                        (activeChat.type === 'room' ? `#${activeChat.target}` : `@${activeChat.target}`) : 'Select a chat first';
-                }
-                
-                if (previewImage) {
-                    if (file.type.startsWith('image/')) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            previewImage.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 150px; border-radius: 8px;">`;
-                        };
-                        reader.readAsDataURL(file);
-                    } else {
-                        previewImage.innerHTML = `<div style="text-align: center; padding: 20px;">📄 ${file.type || 'Document'}</div>`;
-                    }
-                }
-                
                 const modal = document.getElementById('upload-preview-modal');
                 if (modal) modal.style.display = 'flex';
             }
@@ -485,16 +558,18 @@ function handleServerMessage(msg) {
                 } else {
                     currentUser = msg.username;
                     currentUserMmr = msg.mmr;
+                    currentUserSkillText = skillMap[currentUserMmr] || 'Data Analysis';
                     loadLeftRooms();
                     
                     if (userDisplayName) userDisplayName.innerText = currentUser;
                     if (userAvatar) userAvatar.innerText = currentUser.charAt(0).toUpperCase();
-                    if (userDisplayMmr) userDisplayMmr.innerText = `MMR: ${currentUserMmr}`;
-                    if (matchmakerUserMmr) matchmakerUserMmr.innerText = currentUserMmr;
+                    if (userDisplayMmr) userDisplayMmr.innerText = `Keahlian: ${currentUserSkillText}`;
+                    if (matchmakerUserMmr) matchmakerUserMmr.innerText = currentUserSkillText;
                     if (authSection) authSection.style.display = 'none';
                     if (appSection) appSection.style.display = 'grid';
                     
                     setTimeout(() => addResetLeftRoomsButton(), 100);
+                    setTimeout(() => addEditSkillButton(), 100);
                     setTimeout(() => joinRoom('General'), 500);
                 }
             } else showAlert(msg.message, 'error');
@@ -526,7 +601,7 @@ function handleServerMessage(msg) {
             if (activeChat && activeChat.type === 'pm' && activeChatStatus) {
                 const userStillOnline = msg.users.some(u => u.username === activeChat.target);
                 if (!userStillOnline) {
-                    activeChatStatus.innerText = '⚠️ User offline';
+                    activeChatStatus.innerText = 'User offline';
                     activeChatStatus.style.color = 'var(--warning)';
                 } else {
                     activeChatStatus.innerText = 'Private Message - Online';
@@ -543,11 +618,20 @@ function handleServerMessage(msg) {
             if (activeChat?.type === 'pm' && activeChat.target === msg.target_user) renderChatHistory(msg.history);
             break;
             
+        case 'mmr_updated':
+            if (msg.username === currentUser) {
+                currentUserMmr = msg.new_mmr;
+                currentUserSkillText = skillMap[currentUserMmr] || 'Data Analysis';
+                if (userDisplayMmr) userDisplayMmr.innerText = `Keahlian: ${currentUserSkillText}`;
+                if (matchmakerUserMmr) matchmakerUserMmr.innerText = currentUserSkillText;
+                appendSystemMessage(`Keahlian diperbarui: ${currentUserSkillText}`);
+            }
+            break;
+            
         case 'message':
             const isRelevantRoom = activeChat?.type === 'room' && msg.room_name === activeChat.target;
             const isRelevantPM = activeChat?.type === 'pm' && (msg.sender === activeChat.target || msg.recipient === activeChat.target);
             
-            // NOTIFIKASI PRIVATE MESSAGE
             if (!isRelevantPM && msg.recipient === currentUser && msg.sender !== currentUser) {
                 console.log('[NOTIF] New PM from:', msg.sender);
                 
@@ -558,7 +642,7 @@ function handleServerMessage(msg) {
                 const toast = document.createElement('div');
                 toast.className = 'message-system';
                 toast.style.cssText = 'background: linear-gradient(135deg, rgba(0,229,255,0.3), rgba(179,136,255,0.3)); border: 2px solid #00e5ff; border-radius: 24px; padding: 12px 20px; margin: 8px 0; cursor: pointer;';
-                toast.innerHTML = `💌 <strong>${escapeHtml(msg.sender)}</strong> sent you a message!<br><span style="font-size:0.7rem;">Click to reply →</span>`;
+                toast.innerHTML = `<strong>${escapeHtml(msg.sender)}</strong> sent you a message!<br><span style="font-size:0.7rem;">Click to reply →</span>`;
                 toast.onclick = () => {
                     removeNotificationIndicator(msg.sender);
                     startPrivateChat(msg.sender);
@@ -596,12 +680,12 @@ function handleServerMessage(msg) {
             
         case 'user_joined':
             if (activeChat?.type === 'room' && activeChat.target === msg.room_name) 
-                appendSystemMessage(`✨ ${msg.username} joined the room`);
+                appendSystemMessage(`${msg.username} joined the room`);
             break;
             
         case 'user_left':
             if (activeChat?.type === 'room' && activeChat.target === msg.room_name) 
-                appendSystemMessage(`👋 ${msg.username} left the room`);
+                appendSystemMessage(`${msg.username} left the room`);
             break;
             
         case 'matchmaking_status': 
@@ -643,7 +727,7 @@ function renderOnlineUsers(users) {
         const item = document.createElement('div');
         item.className = 'list-item';
         if (activeChat?.type === 'pm' && activeChat.target === user.username) item.classList.add('active');
-        item.innerHTML = `<span class="online-dot"></span><span>${escapeHtml(user.username)} (${user.mmr})</span>`;
+        item.innerHTML = `<span class="online-dot"></span><span>${escapeHtml(user.username)}</span>`;
         item.onclick = () => {
             removeNotificationIndicator(user.username);
             startPrivateChat(user.username);
@@ -694,12 +778,12 @@ function leaveRoom() {
         saveLeftRooms();
         renderRooms();
         
-        appendSystemMessage(`🚪 You left "${roomName}". Use ↺ button to see all rooms again.`);
+        appendSystemMessage(`You left "${roomName}". Use ↺ button to see all rooms again.`);
         
         activeChat = null;
         if (activeChatTitle) activeChatTitle.innerText = 'Select a room or user';
         if (activeChatStatus) activeChatStatus.innerText = 'Join a conversation';
-        if (chatMessagesContainer) chatMessagesContainer.innerHTML = '<div class="message-system">✨ Select a channel from the sidebar ✨</div>';
+        if (chatMessagesContainer) chatMessagesContainer.innerHTML = '<div class="message-system">Select a channel from the sidebar</div>';
         if (chatMessageInput) {
             chatMessageInput.disabled = true;
             chatMessageInput.value = '';
@@ -733,7 +817,7 @@ if (chatMessageInput) {
 function renderChatHistory(history) {
     if (!chatMessagesContainer) return;
     chatMessagesContainer.innerHTML = '';
-    if (history.length === 0) chatMessagesContainer.innerHTML = '<div class="message-system">✨ No messages yet. Start the conversation! ✨</div>';
+    if (history.length === 0) chatMessagesContainer.innerHTML = '<div class="message-system">No messages yet. Start the conversation!</div>';
     else history.forEach(msg => appendMessage(msg));
     scrollChatToBottom();
 }
@@ -848,7 +932,7 @@ if (createRoomSubmitBtn) {
         if (roomName) {
             sendToServer('create_room', { room_name: roomName });
             if (createRoomModal) createRoomModal.style.display = 'none';
-            appendSystemMessage(`✨ Creating room "${roomName}"...`);
+            appendSystemMessage(`Creating room "${roomName}"...`);
         }
     });
 }
@@ -856,8 +940,12 @@ if (createRoomSubmitBtn) {
 // ========== MATCHMAKING ==========
 if (matchmakingActionBtn) {
     matchmakingActionBtn.addEventListener('click', () => {
-        if (isMatchmaking) sendToServer('cancel_matchmaking', {});
-        else sendToServer('start_matchmaking', {});
+        if (isMatchmaking) {
+            sendToServer('cancel_matchmaking', {});
+        } else {
+            // Kirim skill saat ini ke server untuk matchmaking berdasarkan keahlian yang SAMA
+            sendToServer('start_matchmaking', { skill: currentUserSkillText });
+        }
     });
 }
 
@@ -899,7 +987,7 @@ function handleMatchmakingStatus(msg) {
             matchmakingActionBtn.classList.remove('btn-secondary');
         }
         if (matchmakingStatusCard) matchmakingStatusCard.style.display = 'none';
-        if (matchedOpponentInfo) matchedOpponentInfo.innerText = `VS ${msg.opponent} (MMR: ${msg.opponent_mmr})`;
+        if (matchedOpponentInfo) matchedOpponentInfo.innerText = `VS ${msg.opponent} (${msg.opponent_skill || 'Unknown'})`;
         if (matchFoundOverlay) matchFoundOverlay.style.display = 'flex';
         setTimeout(() => { 
             if (matchFoundOverlay) matchFoundOverlay.style.display = 'none'; 
@@ -928,7 +1016,7 @@ function addResetLeftRoomsButton() {
         leftRooms.clear();
         saveLeftRooms();
         renderRooms();
-        appendSystemMessage(`✨ Reset ${count} left room(s). All rooms are back!`);
+        appendSystemMessage(`Reset ${count} left room(s). All rooms are back!`);
         
         if (!activeChat) {
             setTimeout(() => joinRoom('General'), 500);
@@ -939,6 +1027,56 @@ function addResetLeftRoomsButton() {
     if (sidebarHeader) {
         sidebarHeader.appendChild(resetLeftRoomsBtn);
     }
+}
+
+// ========== FIX CSS UNTUK KEAHLIAN ==========
+const fixStyle = document.createElement('style');
+fixStyle.textContent = `
+    /* Biar tulisan keahlian keliatan */
+    #user-display-mmr {
+        font-size: 0.85rem !important;
+        font-weight: bold !important;
+        color: #00e5ff !important;
+        background: rgba(0, 229, 255, 0.15) !important;
+        padding: 4px 10px !important;
+        border-radius: 20px !important;
+        display: inline-block !important;
+        margin-top: 5px !important;
+    }
+    
+    /* Dropdown keahlian */
+    #skill-select {
+        font-size: 1rem !important;
+        padding: 12px !important;
+        background: #0f0f2a !important;
+        color: white !important;
+        border: 1px solid #00e5ff !important;
+        border-radius: 12px !important;
+    }
+    
+    #skill-select option {
+        background: #1a1a3a !important;
+        color: white !important;
+        padding: 10px !important;
+    }
+    
+    /* Modal title */
+    .modal-title {
+        color: white !important;
+    }
+    
+    /* Teks di modal */
+    #skill-content p {
+        color: #aaa !important;
+        font-size: 0.9rem !important;
+    }
+`;
+document.head.appendChild(fixStyle);
+
+// Ganti teks "Your Skill Rating" menjadi "Nilai Keahlian"
+const mmrLabel = document.querySelector('.mmr-label');
+if (mmrLabel) {
+    mmrLabel.innerText = 'Nilai Keahlian';
 }
 
 console.log('[TeamFinder] Client ready');
