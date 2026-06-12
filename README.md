@@ -1,11 +1,10 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/4SHtB1vz)
 
-
-| No | Name | NRP           |
-| -- | ---  | ---           |
+| No | Name | NRP |
+| -- | ---  | --- |
 | 1 | Kiko | 5025241000 |
-| 2 | Shifa Alya Dewi  | 5025241176 |
-| 3 | Dyah Utami Kesuma Dewi  | 5025241186 |
+| 2 | Shifa Alya Dewi | 5025241176 |
+| 3 | Dyah Utami Kesuma Dewi | 5025241186 |
 
 ---
 
@@ -18,21 +17,27 @@
 ## **Fitur Utama**
 
 ### Fitur Wajib
-- **Authentication** - Login & Register sederhana
-- **Multi Chat Room** - Create, join, leave room
-- **Broadcast Message** - Kirim pesan ke seluruh anggota room
-- **Private Message** - Chat pribadi antar user
-- **Online User List** - Lihat siapa yang sedang online
-- **Room List** - Daftar semua room yang tersedia
-- **Chat History** - Pesan tersimpan di database
-- **Timestamp Message** - Waktu pengiriman pesan
-- **Server Logging** - Log aktivitas server
+
+| Fitur | Keterangan |
+|-------|-------------|
+| **Authentication** | Login & Register sederhana dengan username/password |
+| **Multi Chat Room** | Create, join, leave room dengan auto update |
+| **Broadcast Message** | Kirim pesan ke seluruh anggota room |
+| **Private Message** | Chat pribadi antar user dengan notifikasi |
+| **Online User List** | Lihat siapa yang sedang online (real-time) |
+| **Room List** | Daftar semua room yang tersedia |
+| **Chat History** | Pesan tersimpan di database SQLite |
+| **Timestamp Message** | Waktu pengiriman pesan (HH:MM:SS) |
+| **Server Logging** | Log aktivitas server dengan warna |
 
 ### Bonus
-- **File Transfer** - Upload/download file (gambar, PDF, dll) dengan chunking 32KB
-- **Emoji/Reaction** - React ke pesan dengan emoji
-- **Database Persistence** - Pesan tersimpan di SQLite
-- **Skill-Based Matchmaking** - Cari tim berdasarkan keahlian yang sama
+
+| Fitur | Keterangan |
+|-------|-------------|
+| **File Transfer** | Upload/download file (gambar, PDF, dll) dengan chunking 32KB |
+| **Emoji/Reaction** | React ke pesan dengan emoji (👍❤️😂😮😢🔥) |
+| **Database Persistence** | Pesan dan user tersimpan di SQLite |
+| **Skill-Based Matchmaking** | Cari tim berdasarkan keahlian yang sama |
 
 ---
 
@@ -41,10 +46,11 @@
 | Komponen | Teknologi |
 |----------|-----------|
 | **Backend** | Python dengan WebSocket (socket & threading) |
-| **Frontend** | HTML, CSS, JavaScript |
-| **Database** | SQLite |
+| **Frontend** | HTML, CSS, JavaScript (Glassmorphism) |
+| **Database** | SQLite dengan WAL mode |
 | **Protocol** | WebSocket dengan JSON serialization |
 | **File Transfer** | Base64 chunking (32KB per chunk) |
+| **Matchmaking** | Skill-based queue dengan threading |
 
 ---
 
@@ -76,13 +82,13 @@ TeamFinder/
 ### Langkah-langkah
 
 1. **Clone repository**
-```
+```bash
 git clone https://github.com/username/TeamFinder.git
 cd TeamFinder
 ```
 
 2. **Jalankan server**
-```
+```bash
 python server.py
 ```
 
@@ -100,53 +106,80 @@ http://localhost:8000
 
 ## **Cara Penggunaan**
 
-### 1. **Chat Room**
+### 1. Chat Room
 - Klik room di sidebar kiri untuk join
 - Ketik pesan dan tekan Enter atau klik Send
 - Emoji reaction: Hover ke pesan → klik 😊 → pilih emoji
 
-### 2. **Private Message**
+### 2. Private Message
 - Klik username di "ONLINE USERS"
 - Kirim pesan private
-- Notifikasi akan muncul (title blink + toast)
+- Notifikasi akan muncul (title blink + toast + badge)
 
-### 3. **Upload File**
+### 3. Upload File
 - Klik tombol 📎
 - Pilih file (gambar, PDF, dll) - Max 10MB
 - Preview akan muncul, klik "Send File" untuk upload
 - Drag & drop file juga didukung
 
-### 4. **Pilih Keahlian**
+### 4. Pilih Keahlian
 - Klik tombol "Pilih Keahlian" di sidebar
-- Pilih keahlian: Data Management, Data Analysis, Pemrograman Jaringan, Pemrograman Web, Pengembangan Software
+- Pilih keahlian yang sesuai
 
-### 5. **Matchmaking**
+| Keahlian | Level |
+|----------|-------|
+| Data Management | Beginner |
+| Data Analysis | Intermediate |
+| Pemrograman Jaringan | Advanced |
+| Pemrograman Web | Expert |
+| Pengembangan Software | Master |
+
+### 5. Matchmaking
 - Klik "Find Match" di panel kanan
-- Sistem akan mencari user dengan keahlian yang SAMA
+- Sistem akan mencari user dengan **keahlian yang SAMA**
 - Setelah match ditemukan, otomatis masuk ke room baru
 
-### 6. **Create Room**
+### 6. Create Room
 - Klik tombol "+" di samping "Rooms"
 - Masukkan nama room baru
-- Room akan muncul otomatis untuk semua user
+- Room akan muncul otomatis untuk semua user (tanpa refresh)
 
-### 7. **Leave Room & Reset**
+### 7. Leave Room & Reset
 - Klik "Leave Room" untuk keluar dari room
 - Room akan hilang dari daftar (tersimpan di localStorage)
 - Klik tombol ↺ untuk mereset dan menampilkan semua room
 
 ---
 
-## **Testing**
+## **Testing & Benchmark**
 
-Jalankan di terminal:
+### Running Server
 ```
 python server.py
 ```
-Kemudian buka di browser:
+
+### Running Client
+Buka browser ke:
 ```
 http://localhost:8000
 ```
+
+### Load Testing (Benchmark)
+```
+python benchmark.py --clients 10 --messages 5
+```
+
+**Hasil Benchmark (shf):**
+
+| Metrik | Hasil |
+|--------|-------|
+| Concurrent Clients | 10 |
+| Messages per Client | 5 |
+| Total Messages | 50 |
+| Total Duration | 8.45 detik |
+| Success Rate | 96% |
+| Avg Latency | 78.3 ms |
+| Throughput | 5.68 msg/sec |
 
 ---
 
@@ -155,13 +188,16 @@ http://localhost:8000
 ### Login Page
 
 
+### Register Page
+
+
 ### Main Chat
 
 
-### Private Message
+### Private Message & Notifikasi
 
 
-### File Upload
+### File Upload Modal
 
 
 ### Matchmaking
@@ -221,5 +257,20 @@ taskkill /PID [PID] /F
 ### File upload gagal
 - Pastikan folder `uploads/` ada dan writable
 - Cek ukuran file tidak melebihi 10MB
+
+### Cannot read property 'addEventListener' of null
+- Pastikan menggunakan versi client.js terbaru
+- Hard refresh browser (Ctrl+Shift+R)
+
+---
+
+## **Kredit**
+
+Dibuat untuk tugas akhir mata kuliah **Pemrograman Jaringan**.
+
+```
+**TeamFinder - Real-Time Collaboration Platform**  
+*Find your team, collaborate better.*
+```
 
 ---
