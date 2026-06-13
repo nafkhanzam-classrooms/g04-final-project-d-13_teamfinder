@@ -555,6 +555,52 @@ def handle_client_connection(client_socket):
                         send_ws_frame(client_socket, 1, json.dumps({
                             "type": "error", "message": "Room already exists."
                         }))
+
+
+                elif msg_type == "create_project":
+
+                    title = data.get("title", "").strip()
+                    description = data.get("description", "").strip()
+                    required_skill = data.get("required_skill", "").strip()
+
+                    if not title:
+                        continue
+                    
+                    db.create_project(
+                        title,
+                        description,
+                        required_skill,
+                        username
+                    )
+                    
+                    projects = db.get_projects()
+
+                    broadcast_global({
+                    "type": "project_list",
+                    "projects": projects
+                })
+
+                    send_ws_frame(
+                        client_socket,
+                        1,
+                        json.dumps({
+                            "type": "project_created"
+                        })
+                    )   
+
+                elif msg_type == "get_projects":
+
+                    projects = db.get_projects()
+
+                    send_ws_frame(
+                        client_socket,
+                        1,
+                        json.dumps({
+                            "type": "project_list",
+                            "projects": projects
+                        })
+                    )
+                    
                         
                 elif msg_type == "send_msg":
                     room_name = data.get("room_name")
