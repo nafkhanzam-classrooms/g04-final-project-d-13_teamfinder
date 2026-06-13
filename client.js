@@ -741,6 +741,45 @@ function handleServerMessage(msg) {
             );
 
             break;
+
+        case 'join_request_status':
+            showAlert(msg.message || (msg.success ? 'Request sent' : 'Request failed'), msg.success ? 'success' : 'error');
+            break;
+
+        case 'join_request_received':
+            // Owner got a request while online
+            if (currentUser && msg.project_title) {
+                appendSystemMessage(`New join request from ${msg.requester_username} for "${msg.project_title}"`);
+            }
+            break;
+
+        case 'join_requests':
+            renderJoinRequests(msg.requests);
+            break;
+
+        case 'join_request_resolved':
+            if (msg.decision === 'accepted' && msg.room_name) {
+                // Requester: auto-join the project chat
+                appendSystemMessage(`✅ Join accepted for "${msg.project_title}". Joining chat...`);
+                setTimeout(() => joinRoom(msg.room_name), 200);
+            } else if (msg.decision === 'rejected') {
+                appendSystemMessage(`❌ Join rejected for "${msg.project_title}".`);
+            }
+
+            // If owner is currently viewing the requests panel, refresh it
+            // (safe even if panel not visible)
+            sendToServer('list_join_requests', {});
+            break;
+
+        case 'room_renamed':
+            // If I'm currently in the old room, hop to the new one.
+            if (activeChat?.type === 'room' && activeChat.target === msg.old_room_name) {
+                appendSystemMessage(`Room renamed to "${msg.new_room_name}". Re-joining...`);
+                setTimeout(() => joinRoom(msg.new_room_name), 100);
+            } else {
+                appendSystemMessage(`Room renamed: "${msg.old_room_name}" → "${msg.new_room_name}"`);
+            }
+            break;
             
         case 'error': 
             showAlert(`Error: ${msg.message}`); 
@@ -781,6 +820,16 @@ function renderProjects(projects) {
             "click",
             () => {
 
+                const isOwner = currentUser && project.owner_username === currentUser;
+                const actionsHtml = isOwner
+                    ? `
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:15px;">
+                            <button id="view-join-requests-btn" class="btn">View Join Requests</button>
+                            <button id="rename-project-room-btn" class="btn btn-secondary">Rename Chat Room</button>
+                        </div>
+                      `
+                    : `<button id="join-project-btn" class="btn" style="margin-top:15px;">Request to Join</button>`;
+
                 activeChatTitle.innerText =
                     project.title;
 
@@ -810,20 +859,99 @@ function renderProjects(projects) {
                             ${project.owner_username}
                         </p>
 
-                        <button
-                            class="btn"
-                            style="margin-top:15px;">
-                            Join Project
-                        </button>
+                        ${actionsHtml}
+
+                        <div id="join-requests-panel" style="margin-top:16px;"></div>
 
                     </div>
                 `;
+
+                // Wire actions
+                if (isOwner) {
+                    const btn = document.getElementById('view-join-requests-btn');
+                    if (btn) {
+                        btn.onclick = () => {
+                            sendToServer('list_join_requests', {});
+                            const panel = document.getElementById('join-requests-panel');
+                            if (panel) panel.innerHTML = '<div class="message-system">Loading requests...</div>';
+                        };
+                    }
+
+                    const renameBtn = document.getElementById('rename-project-room-btn');
+                    if (renameBtn) {
+                        renameBtn.onclick = () => {
+                            const newName = prompt('New chat room name (max 30 chars):');
+                            if (!newName) return;
+                            sendToServer('rename_project_room', { project_id: project.id, new_room_name: newName });
+                        };
+                    }
+                } else {
+                    const btn = document.getElementById('join-project-btn');
+                    if (btn) {
+                        btn.onclick = () => {
+                            sendToServer('request_join_project', { project_id: project.id });
+                            btn.disabled = true;
+                            btn.innerText = 'Request sent...';
+                        };
+                    }
+                }
             }
         );
 
         projectListContainer.appendChild(
             item
         );
+    });
+}
+
+function renderJoinRequests(requests) {
+    const panel = document.getElementById('join-requests-panel');
+    if (!panel) return;
+    if (!requests || requests.length === 0) {
+        panel.innerHTML = '<div class="message-system">No pending requests.</div>';
+        return;
+    }
+
+    panel.innerHTML = `
+        <div class="message-system" style="margin-bottom:10px;">Pending requests</div>
+        <div id="join-requests-list"></div>
+    `;
+    const list = document.getElementById('join-requests-list');
+    if (!list) return;
+
+    requests.forEach(r => {
+        const row = document.createElement('div');
+        row.className = 'list-item';
+        row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:10px;';
+        row.innerHTML = `
+            <div>
+                <div style="font-weight:600;">${escapeHtml(r.requester_username)}</div>
+                <div style="opacity:0.8; font-size:0.85rem;">${escapeHtml(r.project_title || '')}</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn btn-secondary" data-action="reject">Reject</button>
+                <button class="btn" data-action="accept">Accept</button>
+            </div>
+        `;
+
+        const acceptBtn = row.querySelector('button[data-action="accept"]');
+        const rejectBtn = row.querySelector('button[data-action="reject"]');
+        if (acceptBtn) {
+            acceptBtn.onclick = () => {
+                sendToServer('resolve_join_request', { request_id: r.request_id, decision: 'accepted' });
+                acceptBtn.disabled = true;
+                if (rejectBtn) rejectBtn.disabled = true;
+            };
+        }
+        if (rejectBtn) {
+            rejectBtn.onclick = () => {
+                sendToServer('resolve_join_request', { request_id: r.request_id, decision: 'rejected' });
+                rejectBtn.disabled = true;
+                if (acceptBtn) acceptBtn.disabled = true;
+            };
+        }
+
+        list.appendChild(row);
     });
 }
 
