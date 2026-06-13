@@ -257,6 +257,14 @@ python benchmark.py --clients 10 --messages 5
 ### Project List & Detail
 <img width="1315" height="653" alt="image" src="https://github.com/user-attachments/assets/4817d77a-2ebe-4a3d-824c-a949eed609f4" />
 
+### Owner Project Validasi
+<img width="1250" height="606" alt="image" src="https://github.com/user-attachments/assets/97d9165b-470c-434a-b547-523a09e317da" />
+
+<img width="1260" height="601" alt="image" src="https://github.com/user-attachments/assets/df38e0f1-74c9-4b81-8f74-8a4076a571fc" />
+
+
+
+
 
 ---
 
