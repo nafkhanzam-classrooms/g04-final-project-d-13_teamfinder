@@ -71,7 +71,37 @@ const createRoomSubmitBtn = document.getElementById('create-room-submit-btn');
 const newRoomNameInput = document.getElementById('new-room-name-input');
 const emojiPickerOverlay = document.getElementById('emoji-picker-overlay');
 const logoutBtn = document.getElementById('logout-btn');
+const projectListContainer = document.getElementById("project-list-container");
+const createProjectModal = document.getElementById("create-project-modal");
+const openCreateProjectBtn =
+    document.getElementById(
+        "open-create-project-modal"
+    );
 
+const closeCreateProjectBtn =
+    document.getElementById(
+        "close-create-project-modal"
+    );
+
+const createProjectSubmitBtn =
+    document.getElementById(
+        "create-project-submit-btn"
+    );
+
+const projectTitleInput =
+    document.getElementById(
+        "project-title-input"
+    );
+
+const projectDescriptionInput =
+    document.getElementById(
+        "project-description-input"
+    );
+
+const projectSkillInput =
+    document.getElementById(
+        "project-skill-input"
+    );
 // File input untuk upload
 const fileInput = document.createElement('input');
 fileInput.type = 'file';
@@ -571,6 +601,11 @@ function handleServerMessage(msg) {
                     setTimeout(() => addResetLeftRoomsButton(), 100);
                     setTimeout(() => addEditSkillButton(), 100);
                     setTimeout(() => joinRoom('General'), 500);
+                    socket.send(
+                        JSON.stringify({
+                            type: "get_projects"
+                        })
+                    );
                 }
             } else showAlert(msg.message, 'error');
             break;
@@ -698,6 +733,14 @@ function handleServerMessage(msg) {
                 if (uploadProgressFill) uploadProgressFill.style.width = '0%';
             }
             break;
+
+        case "project_list":
+
+            renderProjects(
+                msg.projects
+            );
+
+            break;
             
         case 'error': 
             showAlert(`Error: ${msg.message}`); 
@@ -717,6 +760,70 @@ function renderRooms() {
         item.innerHTML = `<span># ${escapeHtml(room.name)}</span>`;
         item.onclick = () => joinRoom(room.name);
         roomListContainer.appendChild(item);
+    });
+}
+
+function renderProjects(projects) {
+
+    projectListContainer.innerHTML = "";
+
+    projects.forEach(project => {
+
+        const item =
+            document.createElement("div");
+
+        item.className = "list-item";
+
+        item.innerText =
+            project.title;
+
+        item.addEventListener(
+            "click",
+            () => {
+
+                activeChatTitle.innerText =
+                    project.title;
+
+                activeChatStatus.innerText =
+                    `Need: ${project.required_skill}`;
+
+                chatMessagesContainer.innerHTML = `
+                    <div style="padding:20px">
+
+                        <h2>
+                            ${project.title}
+                        </h2>
+
+                        <p>
+                            ${project.description}
+                        </p>
+
+                        <hr>
+
+                        <p>
+                            <b>Required Skill:</b>
+                            ${project.required_skill}
+                        </p>
+
+                        <p>
+                            <b>Owner:</b>
+                            ${project.owner_username}
+                        </p>
+
+                        <button
+                            class="btn"
+                            style="margin-top:15px;">
+                            Join Project
+                        </button>
+
+                    </div>
+                `;
+            }
+        );
+
+        projectListContainer.appendChild(
+            item
+        );
     });
 }
 
@@ -937,6 +1044,58 @@ if (createRoomSubmitBtn) {
     });
 }
 
+// ========== PROJECT CREATION ==========
+
+if (openCreateProjectBtn) {
+    openCreateProjectBtn.addEventListener('click', () => {
+
+        createProjectModal.style.display = 'flex';
+
+        projectTitleInput.value = '';
+        projectDescriptionInput.value = '';
+        projectSkillInput.value = '';
+
+        projectTitleInput.focus();
+    });
+}
+
+if (closeCreateProjectBtn) {
+    closeCreateProjectBtn.addEventListener('click', () => {
+
+        createProjectModal.style.display = 'none';
+    });
+}
+
+if (createProjectSubmitBtn) {
+    createProjectSubmitBtn.addEventListener('click', () => {
+
+        const title =
+            projectTitleInput.value.trim();
+
+        const description =
+            projectDescriptionInput.value.trim();
+
+        const skill =
+            projectSkillInput.value.trim();
+
+        if (!title) {
+            alert('Project title required');
+            return;
+        }
+
+        sendToServer(
+            'create_project',
+            {
+                title: title,
+                description: description,
+                required_skill: skill
+            }
+        );
+
+        createProjectModal.style.display =
+            'none';
+    });
+}
 // ========== MATCHMAKING ==========
 if (matchmakingActionBtn) {
     matchmakingActionBtn.addEventListener('click', () => {
