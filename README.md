@@ -129,16 +129,16 @@ http://localhost:8000
 - Drag & drop file juga didukung
 
 ### 4. Pilih Keahlian
-- Klik tombol "Pilih Keahlian" di sidebar
+- Klik tombol "Pilih Keahlian" di sidebar di bawah username
 - Pilih keahlian yang sesuai
 
-| Keahlian | Level |
-|----------|-------|
-| Data Management | Beginner |
-| Data Analysis | Intermediate |
-| Pemrograman Jaringan | Advanced |
-| Pemrograman Web | Expert |
-| Pengembangan Software | Master |
+| Keahlian |
+|----------|
+| Data Management |
+| Data Analysis |
+| Pemrograman Jaringan |
+| Pemrograman Web |
+| Pengembangan Software |
 
 ### 5. Matchmaking
 - Klik "Find Match" di panel kanan
@@ -222,6 +222,9 @@ python benchmark.py --clients 10 --messages 5
 
 ### Private Message
 <img width="1316" height="652" alt="image" src="https://github.com/user-attachments/assets/fd82cf28-1129-429d-85e8-6f4078778209" />
+
+### Emoji Reactions
+<img width="1317" height="652" alt="image" src="https://github.com/user-attachments/assets/1ed99d44-8278-4dea-8217-159ed03ab413" />
 
 ### File Upload Modal
 <img width="1316" height="654" alt="image" src="https://github.com/user-attachments/assets/eff26674-11ad-4f88-9631-e258241bcf59" />
