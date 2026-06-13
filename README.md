@@ -132,14 +132,6 @@ http://localhost:8000
 - Klik tombol "Pilih Keahlian" di sidebar di bawah username
 - Pilih keahlian yang sesuai
 
-| Keahlian |
-|----------|
-| Data Management |
-| Data Analysis |
-| Pemrograman Jaringan |
-| Pemrograman Web |
-| Pengembangan Software |
-
 ### 5. Matchmaking
 - Klik "Find Match" di panel kanan
 - Sistem akan mencari user dengan **keahlian yang SAMA**
