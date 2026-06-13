@@ -69,6 +69,19 @@ def db_init():
             FOREIGN KEY(message_id) REFERENCES messages(id) ON DELETE CASCADE
         )
         """)
+
+      
+# PROJECTS
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS projects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            required_skill TEXT,
+            owner_username TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
         
         # Seed default rooms if none exist
         cursor.execute("SELECT COUNT(*) FROM rooms")
@@ -295,3 +308,56 @@ def get_message_recipient_info(message_id):
 # Run DB initialization when run directly
 if __name__ == "__main__":
     db_init()
+
+def create_project(
+    title,
+    description,
+    required_skill,
+    owner_username
+):
+    with db_lock:
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO projects
+            (
+                title,
+                description,
+                required_skill,
+                owner_username
+            )
+            VALUES (?, ?, ?, ?)
+        """, (
+            title,
+            description,
+            required_skill,
+            owner_username
+        ))
+
+        conn.commit()
+        conn.close()
+
+
+def get_projects():
+
+    with db_lock:
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT *
+            FROM projects
+            ORDER BY id DESC
+        """)
+
+        projects = [
+            dict(row)
+            for row in cursor.fetchall()
+        ]
+
+        conn.close()
+
+        return projects
