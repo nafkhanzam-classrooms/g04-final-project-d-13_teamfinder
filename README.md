@@ -2,7 +2,7 @@
 
 | No | Name | NRP |
 | -- | ---  | --- |
-| 1 | Kiko | 5025241000 |
+| 1 | Acquirell Kriswanto | 5025241035 |
 | 2 | Shifa Alya Dewi | 5025241176 |
 | 3 | Dyah Utami Kesuma Dewi | 5025241186 |
 
