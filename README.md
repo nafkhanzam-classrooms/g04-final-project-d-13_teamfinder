@@ -194,17 +194,17 @@ http://localhost:8000
 python benchmark.py --clients 10 --messages 5
 ```
 
-**Hasil Benchmark (shf):**
+**Hasil Benchmark:**
 
 | Metrik | Hasil |
 |--------|-------|
 | Concurrent Clients | 10 |
 | Messages per Client | 5 |
 | Total Messages | 50 |
-| Total Duration | 8.45 detik |
-| Success Rate | 96% |
-| Avg Latency | 78.3 ms |
-| Throughput | 5.68 msg/sec |
+| Total Duration | 4.13 detik |
+| Success Rate | 100% |
+| Avg Latency | 269.79 ms |
+| Throughput | 12.10 msg/sec |
 
 ---
 
@@ -298,8 +298,8 @@ taskkill /PID [PID] /F
 Dibuat untuk tugas akhir mata kuliah **Pemrograman Jaringan**.
 
 ```
-**TeamFinder - Real-Time Collaboration Platform**  
-*Find your team, collaborate better.*
+TeamFinder - Real-Time Collaboration Platform
+Find your team, collaborate better.
 ```
 
 ---
