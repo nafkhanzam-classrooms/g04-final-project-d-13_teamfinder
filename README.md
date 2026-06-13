@@ -37,6 +37,9 @@ Selain menyediakan fitur komunikasi real-time seperti chat room, private messagi
 | **Project Creation** | Membuat project baru lengkap dengan deskripsi dan kebutuhan skill |
 | **Project Listing** | Menampilkan seluruh project yang tersedia secara real-time |
 | **Project Detail View** | Menampilkan detail project ketika dipilih |
+| **Project Join Request** | User bisa request join ke owner; owner bisa accept/reject |
+| **Project Chat Room** | Jika request diterima, user otomatis masuk ke room chat project |
+| **Rename Project Chat Room** | Owner bisa rename room chat project (history tetap ikut) |
 
 ### Fitur Tambahan
 
@@ -165,7 +168,27 @@ http://localhost:8000
   - Skill yang dibutuhkan
   - Pemilik project
 
-### 9. Leave Room & Reset
+### 9. Request Join Project
+
+- Klik salah satu project pada sidebar
+- Tekan tombol Request to Join untuk mengirim permintaan bergabung ke owner
+- Jika owner menerima permintaan, user akan otomatis masuk ke room chat project
+
+### 10. Approve/Reject Join Request (Owner Only)
+
+- Owner klik project miliknya
+- Klik tombol View Join Requests
+- Akan muncul daftar request yang pending
+- Klik Accept untuk menerima (user auto join room) atau Reject untuk menolak
+
+### 11. Rename Room Chat Project (Owner Only
+
+- Owner klik project miliknya
+- Klik tombol Rename Chat Room
+- Masukkan nama room baru (maks 30 karakter)
+- Room akan berubah nama dan user yang sedang online akan otomatis re-join
+  
+### 12. Leave Room & Reset
 - Klik "Leave Room" untuk keluar dari room
 - Room akan hilang dari daftar (tersimpan di localStorage)
 - Klik tombol ↺ untuk mereset dan menampilkan semua room
@@ -256,6 +279,10 @@ python benchmark.py --clients 10 --messages 5
 | `upload_file_chunk` | `{filename, chunk_index, total_chunks, data}` | Upload chunk file |
 | `create_project` | `{title, description, required_skill}` | Membuat project baru |
 | `get_projects` | `{}` | Mengambil daftar project |
+| `request_join_project` | {project_id} | Request join ke owner project |
+| `list_join_requests` | `{}` | Owner meminta daftar request join (pending) |
+| `resolve_join_request` | {request_id, decision} | Owner accept/reject request join |
+| `rename_project_room` | {project_id, new_room_name} | Owner rename room chat project |
 
 ### Server → Client
 
@@ -272,6 +299,11 @@ python benchmark.py --clients 10 --messages 5
 | `file_upload_status` | `{filename, progress}` | Progress upload |
 | `project_list` | `{projects}` | Daftar seluruh project |
 | `project_created` | `{}` | Konfirmasi project berhasil dibuat |
+| `join_request_status` | {success, message, project_id} | Status request join (berhasil/gagal)t |
+| `join_request_received` | {project_id, project_title, requester_username} |Notifikasi ke owner jika ada request baru |
+| `join_requests` | `{}` | Daftar request join (pending) untuk ownert |
+| `join_request_resolved` | {request_id, project_id, project_title, requester_username, decision, room_name} | Hasil accept/reject (accepted → auto join room) |
+| `room_renamed` | {old_room_name, new_room_name, project_id, project_title} | Broadcast rename room ke member online |
 
 ---
 
