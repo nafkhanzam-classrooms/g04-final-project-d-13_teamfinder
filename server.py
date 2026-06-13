@@ -347,6 +347,21 @@ def on_matchmaking_complete(user_a, user_b, room_name):
     
     # Broadcast room updates
     broadcast_rooms()
+
+
+def project_room_name(project_id: int, project_title: str | None = None) -> str:
+    """Stable room name for a project."""
+    # Keep it deterministic and short; title may change.
+    return f"project-{project_id}"
+
+
+def sanitize_room_name(name: str) -> str:
+    name = (name or "").strip()
+    # keep simple: letters, numbers, dash, underscore, space
+    allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_ "
+    cleaned = "".join([c for c in name if c in allowed])
+    cleaned = " ".join(cleaned.split())
+    return cleaned[:30]
     
     # Send match status to user A
     send_to_user(user_a["username"], {
@@ -572,6 +587,18 @@ def handle_client_connection(client_socket):
                         required_skill,
                         username
                     )
+
+                    # Ensure owner is a member (idempotent)
+                    try:
+                        # Fetch the newest project id for this owner/title pair
+                        # (simple approach for this project)
+                        projects_now = db.get_projects()
+                        if projects_now:
+                            newest = projects_now[0]
+                            if newest.get("owner_username") == username and newest.get("title") == title:
+                                db.ensure_project_owner_is_member(newest["id"], username)
+                    except Exception:
+                        pass
                     
                     projects = db.get_projects()
 
@@ -587,6 +614,87 @@ def handle_client_connection(client_socket):
                             "type": "project_created"
                         })
                     )   
+
+                elif msg_type == "request_join_project":
+                    project_id = data.get("project_id")
+                    if not project_id:
+                        continue
+                    project = db.get_project(int(project_id))
+                    if not project:
+                        send_ws_frame(client_socket, 1, json.dumps({
+                            "type": "error", "message": "Project not found."
+                        }))
+                        continue
+                    owner = project.get("owner_username")
+                    if owner == username:
+                        send_ws_frame(client_socket, 1, json.dumps({
+                            "type": "error", "message": "You are the owner."
+                        }))
+                        continue
+
+                    ok, message = db.create_join_request(int(project_id), username)
+                    send_ws_frame(client_socket, 1, json.dumps({
+                        "type": "join_request_status",
+                        "success": ok,
+                        "message": message,
+                        "project_id": int(project_id)
+                    }))
+
+                    if ok:
+                        # Notify owner in real-time if online
+                        send_to_user(owner, {
+                            "type": "join_request_received",
+                            "project_id": int(project_id),
+                            "project_title": project.get("title"),
+                            "requester_username": username,
+                        })
+
+                elif msg_type == "list_join_requests":
+                    reqs = db.list_pending_join_requests(username)
+                    send_ws_frame(client_socket, 1, json.dumps({
+                        "type": "join_requests",
+                        "requests": reqs
+                    }))
+
+                elif msg_type == "resolve_join_request":
+                    request_id = data.get("request_id")
+                    decision = data.get("decision")
+                    if not request_id or not decision:
+                        continue
+                    ok, result = db.resolve_join_request(int(request_id), username, decision)
+                    if not ok:
+                        send_ws_frame(client_socket, 1, json.dumps({
+                            "type": "error", "message": result
+                        }))
+                        continue
+
+                    # Ensure project room exists (stored on project)
+                    prj = db.get_project(int(result["project_id"]))
+                    room_name = (prj.get("room_name") if prj else None) or project_room_name(int(result["project_id"]))
+                    try:
+                        db.create_room(room_name, prj.get("owner_username") if prj else username)
+                    except Exception:
+                        pass
+                    try:
+                        db.set_project_room_name(int(result["project_id"]), room_name)
+                    except Exception:
+                        pass
+                    broadcast_rooms()
+
+                    payload = {
+                        "type": "join_request_resolved",
+                        "request_id": int(result["request_id"]),
+                        "project_id": int(result["project_id"]),
+                        "project_title": result.get("project_title"),
+                        "requester_username": result.get("requester_username"),
+                        "decision": result.get("decision"),
+                        "room_name": room_name
+                    }
+
+                    # Notify requester
+                    send_to_user(result.get("requester_username"), payload)
+                    # Confirm to owner too
+                    send_ws_frame(client_socket, 1, json.dumps(payload))
 
                 elif msg_type == "get_projects":
 
@@ -607,6 +715,18 @@ def handle_client_connection(client_socket):
                     content = data.get("content", "").strip()
                     if not room_name or not content:
                         continue
+
+                    # Guard: for project rooms, only members can chat
+                    try:
+                        prj = db.get_project_by_room(str(room_name))
+                        if prj:
+                            if not db.is_project_member(int(prj["id"]), username):
+                                send_ws_frame(client_socket, 1, json.dumps({
+                                    "type": "error", "message": "You are not a member of this project."
+                                }))
+                                continue
+                    except Exception:
+                        pass
                         
                     msg_id, timestamp = db.save_message(username, room_name, None, content, 'text')
                     broadcast_to_room(room_name, {
@@ -620,6 +740,61 @@ def handle_client_connection(client_socket):
                         "timestamp": timestamp,
                         "reactions": []
                     })
+
+                elif msg_type == "rename_project_room":
+                    project_id = data.get("project_id")
+                    new_room_name = sanitize_room_name(data.get("new_room_name", ""))
+                    if not project_id or not new_room_name:
+                        send_ws_frame(client_socket, 1, json.dumps({
+                            "type": "error", "message": "Invalid room name."
+                        }))
+                        continue
+
+                    prj = db.get_project(int(project_id))
+                    if not prj:
+                        send_ws_frame(client_socket, 1, json.dumps({
+                            "type": "error", "message": "Project not found."
+                        }))
+                        continue
+                    if prj.get("owner_username") != username:
+                        send_ws_frame(client_socket, 1, json.dumps({
+                            "type": "error", "message": "Not allowed."
+                        }))
+                        continue
+
+                    old_room = prj.get("room_name") or project_room_name(int(project_id))
+                    # Ensure old room exists so rename works
+                    try:
+                        db.create_room(old_room, username)
+                    except Exception:
+                        pass
+
+                    ok = db.rename_room(old_room, new_room_name)
+                    if not ok:
+                        send_ws_frame(client_socket, 1, json.dumps({
+                            "type": "error", "message": "Room name already exists or rename failed."
+                        }))
+                        continue
+
+                    db.set_project_room_name(int(project_id), new_room_name)
+                    broadcast_rooms()
+
+                    # Notify everyone online in that room to re-join
+                    broadcast_to_room(new_room_name, {
+                        "type": "room_renamed",
+                        "old_room_name": old_room,
+                        "new_room_name": new_room_name,
+                        "project_id": int(project_id),
+                        "project_title": prj.get("title"),
+                    })
+
+                    send_ws_frame(client_socket, 1, json.dumps({
+                        "type": "room_renamed",
+                        "old_room_name": old_room,
+                        "new_room_name": new_room_name,
+                        "project_id": int(project_id),
+                        "project_title": prj.get("title"),
+                    }))
                     
                 elif msg_type == "send_pm":
                     recipient = data.get("recipient")
@@ -939,7 +1114,6 @@ def start_server():
         active_socket.close()
 
 if __name__ == "__main__":
-    # Check for CLI args to override configs
     if "--tls" in sys.argv:
         USE_TLS = True
     if "--port" in sys.argv:
