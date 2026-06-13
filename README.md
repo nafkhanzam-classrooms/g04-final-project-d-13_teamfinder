@@ -34,7 +34,8 @@ Selain menyediakan fitur komunikasi real-time seperti chat room, private messagi
 | **Project Creation** | Membuat project baru lengkap dengan deskripsi dan kebutuhan skill |
 | **Project Listing** | Menampilkan seluruh project yang tersedia secara real-time |
 | **Project Detail View** | Menampilkan detail project ketika dipilih |
-### Bonus
+
+### Fitur Tambahan
 
 | Fitur | Keterangan |
 |-------|-------------|
@@ -217,16 +218,24 @@ python benchmark.py --clients 10 --messages 5
 <img width="1317" height="652" alt="image" src="https://github.com/user-attachments/assets/53aebf04-fb94-4c22-9323-d129408498c7" />
 
 ### Main Chat
-<img width="1315" height="653" alt="image" src="https://github.com/user-attachments/assets/d02bc5f9-4ce8-4761-b7b5-a830811e021d" />
+<img width="1316" height="654" alt="image" src="https://github.com/user-attachments/assets/b24afade-1dc8-490b-a6e7-86989890f4ec" />
 
 ### Private Message
-<img width="1316" height="654" alt="image" src="https://github.com/user-attachments/assets/52f03c03-1ee8-4f16-89ab-161db54d2980" />
+<img width="1316" height="652" alt="image" src="https://github.com/user-attachments/assets/fd82cf28-1129-429d-85e8-6f4078778209" />
 
 ### File Upload Modal
-<img width="1318" height="651" alt="image" src="https://github.com/user-attachments/assets/2c042515-6a46-4d08-a448-a3395309bf54" />
+<img width="1316" height="654" alt="image" src="https://github.com/user-attachments/assets/eff26674-11ad-4f88-9631-e258241bcf59" />
+<img width="1317" height="654" alt="image" src="https://github.com/user-attachments/assets/27984418-1421-4af2-8c98-d81abeff4f1f" />
 
 ### Matchmaking
 <img width="1316" height="654" alt="image" src="https://github.com/user-attachments/assets/780d7028-fe4b-4258-96af-c54d063699ac" />
+
+### Create Project Modal
+<img width="1317" height="652" alt="image" src="https://github.com/user-attachments/assets/bbf520ef-77bd-468c-be9e-09398d965449" />
+
+### Project List & Detail
+<img width="1315" height="653" alt="image" src="https://github.com/user-attachments/assets/4817d77a-2ebe-4a3d-824c-a949eed609f4" />
+
 
 ---
 
@@ -271,7 +280,7 @@ python benchmark.py --clients 10 --messages 5
 ## **Troubleshooting**
 
 ### Port 8000 sudah digunakan
-```bash
+```
 # Cek proses yang menggunakan port 8000
 netstat -ano | findstr :8000
 
