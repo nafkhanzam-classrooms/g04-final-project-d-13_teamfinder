@@ -10,7 +10,9 @@
 
 # TeamFinder - Real-Time Collaboration Platform
 
-**TeamFinder** adalah platform kolaborasi real-time untuk mahasiswa mencari tim untuk PKM, Gemastik, Hackathon, Tugas PPL, Skripsi, dan Research. Dilengkapi dengan fitur chat room, private messaging, file transfer, emoji reactions, dan matchmaking berdasarkan keahlian.
+**TeamFinder** adalah platform kolaborasi real-time yang membantu mahasiswa menemukan tim dan anggota proyek untuk PKM, Gemastik, Hackathon, Penelitian, maupun tugas akademik lainnya.
+
+Selain menyediakan fitur komunikasi real-time seperti chat room, private messaging, file sharing, dan emoji reactions, TeamFinder juga menyediakan fitur Project Management sederhana yang memungkinkan pengguna membuat proyek, melihat daftar proyek yang tersedia, dan menemukan rekan tim yang memiliki minat atau keahlian yang sesuai.
 
 ---
 
@@ -29,7 +31,9 @@
 | **Chat History** | Pesan tersimpan di database SQLite |
 | **Timestamp Message** | Waktu pengiriman pesan (HH:MM:SS) |
 | **Server Logging** | Log aktivitas server dengan warna |
-
+| **Project Creation** | Membuat project baru lengkap dengan deskripsi dan kebutuhan skill |
+| **Project Listing** | Menampilkan seluruh project yang tersedia secara real-time |
+| **Project Detail View** | Menampilkan detail project ketika dipilih |
 ### Bonus
 
 | Fitur | Keterangan |
@@ -38,6 +42,7 @@
 | **Emoji/Reaction** | React ke pesan dengan emoji (👍❤️😂😮😢🔥) |
 | **Database Persistence** | Pesan dan user tersimpan di SQLite |
 | **Skill-Based Matchmaking** | Cari tim berdasarkan keahlian yang sama |
+| **TeamFinder Project Board** | Dashboard project sederhana untuk mencari anggota tim |
 
 ---
 
@@ -144,7 +149,27 @@ http://localhost:8000
 - Masukkan nama room baru
 - Room akan muncul otomatis untuk semua user (tanpa refresh)
 
-### 7. Leave Room & Reset
+### 7. Create Project
+
+- Klik tombol "+" pada bagian Projects
+- Masukkan:
+  - Judul Project
+  - Deskripsi Project
+  - Skill yang Dibutuhkan
+- Klik tombol Create
+- Project akan langsung muncul pada daftar Projects
+
+### 8. View Project
+
+- Klik salah satu project pada sidebar
+- Detail project akan ditampilkan pada panel utama
+- Pengguna dapat melihat:
+  - Nama project
+  - Deskripsi
+  - Skill yang dibutuhkan
+  - Pemilik project
+
+### 9. Leave Room & Reset
 - Klik "Leave Room" untuk keluar dari room
 - Room akan hilang dari daftar (tersimpan di localStorage)
 - Klik tombol ↺ untuk mereset dan menampilkan semua room
@@ -222,6 +247,8 @@ python benchmark.py --clients 10 --messages 5
 | `start_matchmaking` | `{skill}` | Mulai cari match |
 | `cancel_matchmaking` | `{}` | Batal cari match |
 | `upload_file_chunk` | `{filename, chunk_index, total_chunks, data}` | Upload chunk file |
+| `create_project` | `{title, description, required_skill}` | Membuat project baru |
+| `get_projects` | `{}` | Mengambil daftar project |
 
 ### Server → Client
 
@@ -236,6 +263,8 @@ python benchmark.py --clients 10 --messages 5
 | `reaction_update` | `{message_id, reactions}` | Update reaction |
 | `matchmaking_status` | `{status, queue_size}` | Status matchmaking |
 | `file_upload_status` | `{filename, progress}` | Progress upload |
+| `project_list` | `{projects}` | Daftar seluruh project |
+| `project_created` | `{}` | Konfirmasi project berhasil dibuat |
 
 ---
 
